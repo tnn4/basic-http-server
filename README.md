@@ -26,6 +26,8 @@ The entire reference source for setting up a `hyper` HTTP server is contained in
 When passed the `-x` flag, `basic-http-server` enables additional conveniences
 useful for developing documentation locally. Those extensions are:
 
+
+
 - Rendering files with the ".md" extension as Markdown.
 
 - Listing directories when no "index.html" file is found.
