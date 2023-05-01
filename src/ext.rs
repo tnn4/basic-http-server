@@ -89,6 +89,7 @@ async fn md_path_to_html(path: &Path) -> Result<Response<Body>> {
         .status(StatusCode::OK)
         .header(header::CONTENT_LENGTH, html.len() as u64)
         .header(header::CONTENT_TYPE, mime::TEXT_HTML.as_ref())
+        .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
         .body(Body::from(html))
         .map_err(Error::from)
 }
@@ -114,6 +115,7 @@ fn maybe_convert_mime_type_to_text(req: &Request<Body>, resp: &mut Response<Body
             use http::header::HeaderValue;
             let val =
                 HeaderValue::from_str(mime::TEXT_PLAIN.as_ref()).expect("mime is valid header");
+            resp.headers_mut().insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, hyper::header::HeaderValue::from_static("*"));
             resp.headers_mut().insert(header::CONTENT_TYPE, val);
         }
     }
