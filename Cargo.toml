@@ -15,15 +15,16 @@ clap = "2.33.0"
 comrak = "0.6.2"
 derive_more = "0.15.0"
 env_logger = "0.6.2"
-futures-preview = "0.3.0-alpha.19"
+futures = "0.3.28"
 handlebars = "1.1.0"
 http = "0.1.19"
-hyper = { version = "0.13.0-alpha.4", features = ["unstable-stream"] }
+hyper = { version = "0.14.26", features = ["http1", "stream", "server", "tcp"] }
 log = "0.4.8"
 mime = "0.3.14"
 mime_guess = "2.0.1"
 percent-encoding = "2.1.0"
 serde = { version = "1.0.102", features = ["derive"] }
-tokio = "0.2.0-alpha.6"
+tokio = {version = "1.28.0", features = ["rt", "rt-multi-thread", "fs"] }
+tokio-util = { version="0.7.8", features = ["codec"] }
 tokio-fs = "0.2.0-alpha.6"
 structopt = "0.2.18"

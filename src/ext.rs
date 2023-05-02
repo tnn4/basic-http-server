@@ -5,9 +5,13 @@
 
 use super::{Config, HtmlCfg};
 use comrak::ComrakOptions;
-use futures::{future, StreamExt};
-use http::{Request, Response, StatusCode};
-use hyper::{header, Body};
+use std::iter::Iterator;
+use futures::{future, Stream, StreamExt};
+// use http::{Request, /*Response,*/ StatusCode};
+use hyper::header::HeaderValue;
+use hyper::body::Body;
+use hyper::{header, Request, Response};
+use hyper::StatusCode;
 use log::{trace, warn};
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use std::error::Error as StdError;
@@ -16,13 +20,14 @@ use std::fmt::Write;
 use std::io;
 use std::path::{Path, PathBuf};
 use tokio_fs::DirEntry;
+use std::fs::ReadDir;
 
 /// The entry point to extensions. Extensions are given both the request and the
 /// response result from regular file serving, and have the opportunity to
 /// replace the response with their own response.
 pub async fn serve(
     config: Config,
-    req: Request<Body>,
+    req: hyper::Request<Body>,
     resp: super::Result<Response<Body>>,
 ) -> super::Result<Response<Body>> {
     trace!("checking extensions");
@@ -84,14 +89,14 @@ async fn md_path_to_html(path: &Path) -> Result<Response<Body>> {
         body: html,
     };
     let html = super::render_html(cfg)?;
-
+    // Hyper
     Response::builder()
-        .status(StatusCode::OK)
+        .status(hyper::StatusCode::OK)
         .header(header::CONTENT_LENGTH, html.len() as u64)
         .header(header::CONTENT_TYPE, mime::TEXT_HTML.as_ref())
         .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
         .body(Body::from(html))
-        .map_err(Error::from)
+        .map_err(|_| hyper::Error)
 }
 
 fn maybe_convert_mime_type_to_text(req: &Request<Body>, resp: &mut Response<Body>) {
@@ -112,7 +117,7 @@ fn maybe_convert_mime_type_to_text(req: &Request<Body>, resp: &mut Response<Body
         }
 
         if do_convert {
-            use http::header::HeaderValue;
+            // use http::header::HeaderValue;
             let val =
                 HeaderValue::from_str(mime::TEXT_PLAIN.as_ref()).expect("mime is valid header");
             resp.headers_mut().insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, hyper::header::HeaderValue::from_static("*"));
@@ -174,8 +179,11 @@ async fn maybe_list_dir(root_dir: &Path, path: &Path) -> Result<Option<Response<
 async fn list_dir(root_dir: &Path, path: &Path) -> Result<Response<Body>> {
     let up_dir = path.join("..");
     let path = path.to_owned();
-    let dents = tokio::fs::read_dir(path).await?;
-    let dents = dents.filter_map(|dent| match dent {
+
+    // returns iterator that yields instances of std::io::Result<DirEntry>
+    // dents = dir entrys
+    let result_read_dir = tokio::fs::read_dir(path).await?;
+    let dents = result_read_dir.filter_map(|dent| match dent {
         Ok(dent) => future::ready(Some(dent)),
         Err(e) => {
             warn!("directory entry error: {}", e);
@@ -192,7 +200,9 @@ async fn list_dir(root_dir: &Path, path: &Path) -> Result<Response<Body>> {
     Ok(resp)
 }
 
-fn make_dir_list_body(root_dir: &Path, paths: &[PathBuf]) -> Result<String> {
+fn make_dir_list_body(
+    root_dir: &Path, 
+    paths: &[PathBuf]) -> Result<String> {
     let mut buf = String::new();
 
     writeln!(buf, "<div>").map_err(Error::WriteInDirList)?;

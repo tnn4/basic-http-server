@@ -1,5 +1,8 @@
 # `basic-http-server`
 
+# Patch Notes
+- allow CORS when passed `-x` flag
+
 A simple static HTTP server, for learning and local development.
 
 `basic-http-server` is designed for two purposes:
