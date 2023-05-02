@@ -96,7 +96,7 @@ async fn md_path_to_html(path: &Path) -> Result<Response<Body>> {
         .header(header::CONTENT_TYPE, mime::TEXT_HTML.as_ref())
         .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
         .body(Body::from(html))
-        .map_err(|_| hyper::Error)
+        //.map_err(|_| hyper::Error.into_cause())
 }
 
 fn maybe_convert_mime_type_to_text(req: &Request<Body>, resp: &mut Response<Body>) {
@@ -181,7 +181,7 @@ async fn list_dir(root_dir: &Path, path: &Path) -> Result<Response<Body>> {
     let path = path.to_owned();
 
     // returns iterator that yields instances of std::io::Result<DirEntry>
-    // dents = dir entrys
+    // dents = dir_entrys
     let result_read_dir = tokio::fs::read_dir(path).await?;
     let dents = result_read_dir.filter_map(|dent| match dent {
         Ok(dent) => future::ready(Some(dent)),

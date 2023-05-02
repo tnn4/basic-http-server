@@ -10,7 +10,7 @@ use futures::stream::{StreamExt, TryStreamExt};
 use handlebars::Handlebars;
 // use http::header::{HeaderMap, HeaderValue};
 // use http::status::StatusCode;
-//use http::Uri;
+use http::Uri;
 use hyper::Uri;
 use hyper::header::{HeaderMap, HeaderValue};
 use hyper::{header, Body, Method, Request, Response, StatusCode};
@@ -196,6 +196,7 @@ async fn serve_file(
 fn try_dir_redirect(
     req: &hyper::Request<Body>, 
     root_dir: &PathBuf) -> Result<Option<Response<Body>>> {
+    
     if req.uri().path().ends_with("/") {
         return Ok(None);
     }
@@ -221,7 +222,7 @@ fn try_dir_redirect(
         .header(header::LOCATION, new_loc)
         .body(Body::empty())
         .map(Some)
-        .map_err(|_|{ hyper::Error })
+        .map_err(|_|{ Error::UriNotAbsolute })
 }
 
 /// Construct a 200 response with the file as the body, streaming it to avoid
@@ -229,7 +230,9 @@ fn try_dir_redirect(
 ///
 /// If the I/O here fails then an error future will be returned, and `serve`
 /// will convert it into the appropriate HTTP error response.
-async fn respond_with_file(path: PathBuf) -> Result<hyper::Response<hyper::body::Body>> {
+async fn respond_with_file(
+    path: PathBuf) -> Result<hyper::Response<hyper::body::Body>> {
+    
     let mime_type = file_path_mime(&path);
 
     let file = File::open(path).await?;
@@ -246,7 +249,7 @@ async fn respond_with_file(path: PathBuf) -> Result<hyper::Response<hyper::body:
 
     let codec = tokio_util::codec::BytesCodec::new();
     let stream = tokio_util::codec::FramedRead::new(file, codec);
-    let stream = stream.map(|b| b.map(bytes::BytesMut::freeze));
+    let stream = stream.map(|b| b.map(|_| bytes::BytesMut::freeze));
     /*let stream = stream.map_decoder(|chunk|
         chunk.map(BytesMut::freeze));*/
     let body = hyper::Body::wrap_stream(stream);
@@ -256,6 +259,7 @@ async fn respond_with_file(path: PathBuf) -> Result<hyper::Response<hyper::body:
         .header(header::CONTENT_LENGTH, len as u64)
         .header(header::CONTENT_TYPE, mime_type.as_ref())
         .body(body)?;
+        // .map_error(|_| Error::Io);
 
     Ok(resp)
 }
@@ -434,7 +438,7 @@ fn html_str_to_response_with_headers(
         .header(header::CONTENT_TYPE, mime::TEXT_HTML.as_ref())
         .body(Body::from(body))
         //.map_err(Error::from)//from<hyper::http::Error not implemented for Error
-        .map_err(|_| hyper::Error)
+        .map_err(|_| Error::Http)
 }
 
 /// A handlebars HTML template.
