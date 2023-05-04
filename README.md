@@ -1,5 +1,14 @@
 # `basic-http-server`
 
+# Install this version
+```sh
+$ cargo install --git https://github.com/tnn4/basic-http-server.git
+```
+
+This version fixes the CORS errors.
+
+---
+
 A simple static HTTP server, for learning and local development.
 
 `basic-http-server` is designed for two purposes:
